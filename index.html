@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<title>VECTOR BELT</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<div id="hud" class="hud">
+  <div id="hud-score" class="hud-cell hud-score">SCORE<br><span>0</span></div>
+  <div id="hud-best" class="hud-cell hud-best">BEST<br><span>0</span></div>
+  <div id="hud-lives" class="hud-lives" aria-label="Lives remaining"></div>
+  <button id="pause-btn" class="icon-btn" aria-label="Pause" type="button">❚❚</button>
+</div>
+
+<div id="wave-banner" class="wave-banner" hidden></div>
+
+<div id="touch-layer" class="touch-layer hidden-controls">
+  <div id="joystick" class="joystick" hidden>
+    <div class="joystick-base"></div>
+    <div id="joystick-knob" class="joystick-knob"></div>
+  </div>
+  <div id="fire-disc" class="fire-disc" aria-hidden="true">FIRE</div>
+  <div id="hyper-btn" class="hyper-btn" role="button" aria-label="Hyperspace">HYPER</div>
+</div>
+
+<div id="overlay-root" class="overlay-root">
+
+  <section id="overlay-title" class="overlay" role="dialog" aria-modal="true" aria-labelledby="title-heading">
+    <div class="overlay-panel">
+      <h1 id="title-heading" class="game-title">VECTOR BELT</h1>
+      <p class="best-line">BEST <span id="title-best">0</span></p>
+      <div class="btn-col">
+        <button id="btn-play" class="btn btn-primary" type="button">Play</button>
+        <button id="btn-howto" class="btn" type="button">How to Play</button>
+        <button id="btn-settings" class="btn" type="button">Settings</button>
+        <button id="btn-fullscreen" class="btn" type="button" hidden>Fullscreen</button>
+      </div>
+      <p id="portrait-hint" class="portrait-hint" hidden>
+        Landscape recommended for the best view.
+        <button id="portrait-hint-dismiss" class="link-btn" type="button">Dismiss</button>
+      </p>
+    </div>
+  </section>
+
+  <section id="overlay-howto" class="overlay" role="dialog" aria-modal="true" aria-labelledby="howto-heading" hidden>
+    <div class="overlay-panel">
+      <h2 id="howto-heading">How to Play</h2>
+      <div class="tabs">
+        <button id="tab-keyboard" class="tab-btn" type="button" aria-selected="true">Keyboard</button>
+        <button id="tab-touch" class="tab-btn" type="button" aria-selected="false">Touch</button>
+      </div>
+      <div id="howto-keyboard" class="howto-panel">
+        <ul class="key-list">
+          <li><span>Rotate</span><b>Arrow Left/Right or A/D</b></li>
+          <li><span>Thrust</span><b>Arrow Up or W</b></li>
+          <li><span>Fire</span><b>Space or J</b></li>
+          <li><span>Hyperspace</span><b>Arrow Down, S or Shift</b></li>
+          <li><span>Pause</span><b>P or Esc</b></li>
+          <li><span>Mute</span><b>M</b></li>
+        </ul>
+      </div>
+      <div id="howto-touch" class="howto-panel" hidden>
+        <ul class="key-list">
+          <li><span>Aim / Thrust</span><b>Left-side joystick</b></li>
+          <li><span>Fire</span><b>Hold anywhere on the right side</b></li>
+          <li><span>Hyperspace</span><b>HYPER button</b></li>
+          <li><span>Pause</span><b>Pause button, top right</b></li>
+        </ul>
+      </div>
+      <div class="btn-col">
+        <button id="btn-howto-back" class="btn" type="button">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="overlay-paused" class="overlay" role="dialog" aria-modal="true" aria-labelledby="paused-heading" hidden>
+    <div class="overlay-panel">
+      <h2 id="paused-heading">Paused</h2>
+      <div class="btn-col">
+        <button id="btn-resume" class="btn btn-primary" type="button">Resume</button>
+        <button id="btn-restart" class="btn" type="button">Restart</button>
+        <button id="btn-paused-settings" class="btn" type="button">Settings</button>
+        <button id="btn-paused-fullscreen" class="btn" type="button" hidden>Fullscreen</button>
+        <button id="btn-quit" class="btn" type="button">Quit to Title</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="overlay-settings" class="overlay" role="dialog" aria-modal="true" aria-labelledby="settings-heading" hidden>
+    <div class="overlay-panel">
+      <h2 id="settings-heading">Settings</h2>
+      <div class="settings-list">
+        <div class="setting-row">
+          <span class="setting-label">Sound</span>
+          <div class="seg" data-setting="sound">
+            <button class="seg-btn" data-value="true" type="button">On</button>
+            <button class="seg-btn" data-value="false" type="button">Off</button>
+          </div>
+        </div>
+        <div class="setting-row" id="row-haptics">
+          <span class="setting-label">Haptics</span>
+          <div class="seg" data-setting="haptics">
+            <button class="seg-btn" data-value="true" type="button">On</button>
+            <button class="seg-btn" data-value="false" type="button">Off</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Glow</span>
+          <div class="seg" data-setting="glow">
+            <button class="seg-btn" data-value="auto" type="button">Auto</button>
+            <button class="seg-btn" data-value="on" type="button">On</button>
+            <button class="seg-btn" data-value="off" type="button">Off</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Quality</span>
+          <div class="seg" data-setting="quality">
+            <button class="seg-btn" data-value="high" type="button">High</button>
+            <button class="seg-btn" data-value="low" type="button">Low</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Screen shake</span>
+          <div class="seg" data-setting="shake">
+            <button class="seg-btn" data-value="true" type="button">On</button>
+            <button class="seg-btn" data-value="false" type="button">Off</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Touch controls</span>
+          <div class="seg" data-setting="touch">
+            <button class="seg-btn" data-value="auto" type="button">Auto</button>
+            <button class="seg-btn" data-value="on" type="button">On</button>
+            <button class="seg-btn" data-value="off" type="button">Off</button>
+          </div>
+        </div>
+      </div>
+      <div class="btn-col">
+        <button id="btn-settings-back" class="btn" type="button">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="overlay-gameover" class="overlay" role="dialog" aria-modal="true" aria-labelledby="gameover-heading" hidden>
+    <div class="overlay-panel">
+      <h2 id="gameover-heading">Game Over</h2>
+      <p id="gameover-newbest" class="new-best" hidden>NEW BEST</p>
+      <p class="go-line">SCORE <span id="gameover-score">0</span></p>
+      <p class="go-line">BEST <span id="gameover-best">0</span></p>
+      <p class="go-line">WAVE <span id="gameover-wave">1</span></p>
+      <div class="btn-col">
+        <button id="btn-play-again" class="btn btn-primary" type="button">Play Again</button>
+        <button id="btn-gameover-title" class="btn" type="button">Title</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/util.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/input.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/world.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "Vector Belt",
+  "short_name": "Vector Belt",
+  "display": "fullscreen",
+  "orientation": "any",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "icons": []
+}
