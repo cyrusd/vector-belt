@@ -4,6 +4,8 @@ A browser game in the spirit of the arcade classic *Asteroids*. It plays on desk
 
 It has no build step and no dependencies. The graphics are drawn with Canvas 2D, and every sound is generated with Web Audio.
 
+**▶ Play it now: https://cyrusd.github.io/vector-belt/**
+
 ## Play locally
 
 Open `index.html` in a browser. Or serve the folder with any static server:
