@@ -283,7 +283,7 @@ Poll `navigator.getGamepads()` each frame. Use the standard mapping:
 | beat 1 / beat 2 | triangle 58 Hz / 52 Hz, 0.09 s, gain 0.35 |
 | saucer (loop) | square carrier (large 180 Hz, small 320 Hz) with an 8 Hz LFO on frequency ±40 Hz. Runs only while a saucer exists. |
 | hyperspace | sine 200→1200 Hz over 0.25 s |
-| extra life | three sine blips at 880, 1175, 1568 Hz, 0.07 s each |
+| extra life | triangle arpeggio 660, 880, 1320 Hz, 0.12 s each, 0.09 s apart (notes overlap), gain 0.2 |
 | ship death | noise → lowpass sweep 1200→100 Hz over 1.1 s |
 
 - Allow at most 6 simultaneous one-shot explosions. Drop extras.
@@ -294,12 +294,12 @@ Poll `navigator.getGamepads()` each frame. Use the standard mapping:
 
 ## 8. Rendering (`render.js`)
 
-- **Background** is solid `#000`. Optionally add a very faint static starfield: 80 points, generated once and redrawn each frame.
-- **Palette**:
-  - vectors `#e8f1ff`
-  - thrust flame `#ffb347`
-  - saucer bullets `#ff6b5b`
-  - invulnerable ship at alpha 0.35 on blink-off frames
+- **Background** is solid, from the theme palette. A very faint static starfield: 80 points, generated once and redrawn each frame.
+- **Themes** (Settings → Theme). Canvas palettes live in `CFG.THEMES`; menu and HUD colors are CSS tokens keyed by `data-game-theme` on `<html>`.
+  - **Classic** (default): black ground, all vectors `#e8f1ff`, thrust flame `#ffb347`, saucer bullets `#ff6b5b`, square bullets, monospace uppercase UI.
+  - **Driftrock**: navy ground `#101735`, ship `#f3eee3`, rocks and flame `#f2b84b`, saucer and its bullets `#ff6fa5`, player bullets `#7fe3f0` drawn round. Geometric sans (Futura / Century Gothic / Avenir stack), sentence case, amber clipped-corner primary buttons, outlined lowercase title.
+  - Explosion sparks take the color of what exploded (rock, saucer or ship).
+  - The invulnerable ship draws at alpha 0.35 on blink-off frames.
 - **Batching**: build **one path for all asteroids** and call `stroke()` once. Do the same for bullets, which are small filled squares of 3 CSS px, drawn with `rect` into one path and one `fill()`. Draw ship and saucer as separate paths.
 - **Glow**: when the `Glow` setting resolves to on, set `ctx.shadowBlur = 8 * dpr * ppu`-scaled and `shadowColor` to the stroke color before the batched strokes, then reset to 0.
   - Auto resolves to on for `(pointer: fine)` and off for coarse pointers.
@@ -320,14 +320,15 @@ Menus and HUD are **DOM elements** layered over the canvas. That gives crisp tex
 **HUD** (top strip inside safe area):
 - Score is top-left and best score is top-center.
 - Lives are drawn as small ship glyphs top-right, left of the pause button. Use inline SVG or CSS triangles.
-- The wave banner is centered and appears transiently.
+- A centered banner fades in and out for transient messages: "Wave N" for the 2 s wave intro, and "Extra ship" in the theme accent color for 2 s when a ship is earned (with the extra-life chime).
+- If bullets still in flight after the last ship is lost earn an extra ship, play continues: the game-over delay is cancelled and the ship respawns.
 - The HUD updates the DOM **only when a value changes**.
 
 **Overlays** (one visible at a time, `role="dialog"`, focus moves to the first button):
 - **Title**: game name, Play, Settings, How to Play, Fullscreen (if supported), best score, and the portrait hint (§6.4).
 - **How to Play**: shows keyboard or touch instructions based on `lastDevice` / coarse pointer, with a tab to switch between them.
 - **Paused**: Resume, Restart, Settings, Fullscreen, Quit to Title.
-- **Settings**: Sound on/off, Haptics on/off (hidden if unsupported), Glow Auto/On/Off, Quality High/Low, Screen shake on/off, Touch controls Auto/On/Off. Changes apply immediately and persist.
+- **Settings**: Theme Classic/Driftrock, Sound on/off, Haptics on/off (hidden if unsupported), Glow Auto/On/Off, Quality High/Low, Screen shake on/off, Touch controls Auto/On/Off. Changes apply immediately and persist.
 - **Game Over**: final score, best score, "NEW BEST" badge, wave reached, Play Again (enabled after 1 s), Title.
 
 Minimum touch target is 44×44 CSS px. Menus must fit a 360×640 portrait screen and a 640×360 landscape screen without scrolling. Use `clamp()` font sizes and `max-height: 100dvh` with internal scroll as a fallback.

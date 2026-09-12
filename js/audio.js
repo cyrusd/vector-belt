@@ -181,17 +181,18 @@
     playTone('sine', CFG.HYPERSPACE_FREQ_START, CFG.HYPERSPACE_FREQ_END, CFG.HYPERSPACE_DUR, 0.2);
   }
 
+  // Rising triangle-wave arpeggio for an earned ship.
   function extraLife() {
     if (!ctx || muted) return;
     var freqs = CFG.EXTRA_LIFE_FREQS;
     var t0 = now();
     for (var i = 0; i < freqs.length; i++) {
-      var t = t0 + i * CFG.EXTRA_LIFE_DUR;
+      var t = t0 + i * CFG.EXTRA_LIFE_SPACING;
       var osc = ctx.createOscillator();
-      osc.type = 'sine';
+      osc.type = 'triangle';
       osc.frequency.value = freqs[i];
       var g = ctx.createGain();
-      g.gain.setValueAtTime(0.25, t);
+      g.gain.setValueAtTime(CFG.EXTRA_LIFE_GAIN, t);
       g.gain.exponentialRampToValueAtTime(0.0001, t + CFG.EXTRA_LIFE_DUR);
       osc.connect(g);
       g.connect(master);

@@ -200,13 +200,15 @@
 
   // ---- Particles ------------------------------------------------------------
   function createParticle() {
-    return { alive: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1 };
+    return { alive: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1, color: 'ROCK' };
   }
 
-  function spawnParticle(p, x, y, vx, vy, life) {
+  // color is a theme palette key: 'ROCK', 'SAUCER' or 'SHIP'.
+  function spawnParticle(p, x, y, vx, vy, life, color) {
     p.alive = true;
     p.x = x; p.y = y; p.vx = vx; p.vy = vy;
     p.life = life; p.maxLife = life;
+    p.color = color || 'ROCK';
   }
 
   function updateParticle(p, dt, worldW, worldH) {

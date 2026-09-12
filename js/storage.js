@@ -7,6 +7,7 @@
   var KEY_SETTINGS = 'vb.settings';
 
   var DEFAULT_SETTINGS = {
+    theme: 'classic',  // 'classic' | 'driftrock'
     sound: true,
     haptics: true,
     glow: 'auto',      // 'auto' | 'on' | 'off'

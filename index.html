@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="manifest.webmanifest">
-<title>VECTOR BELT</title>
+<title>Vector Belt</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,29 +16,29 @@
 <canvas id="game-canvas"></canvas>
 
 <div id="hud" class="hud">
-  <div id="hud-score" class="hud-cell hud-score">SCORE<br><span>0</span></div>
-  <div id="hud-best" class="hud-cell hud-best">BEST<br><span>0</span></div>
+  <div id="hud-score" class="hud-cell hud-score">Score<br><span>0</span></div>
+  <div id="hud-best" class="hud-cell hud-best">Best<br><span>0</span></div>
   <div id="hud-lives" class="hud-lives" aria-label="Lives remaining"></div>
   <button id="pause-btn" class="icon-btn" aria-label="Pause" type="button">❚❚</button>
 </div>
 
-<div id="wave-banner" class="wave-banner" hidden></div>
+<div id="banner" class="banner" aria-live="polite"></div>
 
 <div id="touch-layer" class="touch-layer hidden-controls">
   <div id="joystick" class="joystick" hidden>
     <div class="joystick-base"></div>
     <div id="joystick-knob" class="joystick-knob"></div>
   </div>
-  <div id="fire-disc" class="fire-disc" aria-hidden="true">FIRE</div>
-  <div id="hyper-btn" class="hyper-btn" role="button" aria-label="Hyperspace">HYPER</div>
+  <div id="fire-disc" class="fire-disc" aria-hidden="true">Fire</div>
+  <div id="hyper-btn" class="hyper-btn" role="button" aria-label="Hyperspace">Hyper</div>
 </div>
 
 <div id="overlay-root" class="overlay-root">
 
   <section id="overlay-title" class="overlay" role="dialog" aria-modal="true" aria-labelledby="title-heading">
     <div class="overlay-panel">
-      <h1 id="title-heading" class="game-title">VECTOR BELT</h1>
-      <p class="best-line">BEST <span id="title-best">0</span></p>
+      <h1 id="title-heading" class="game-title">Vector Belt</h1>
+      <p class="best-line">Best <span id="title-best">0</span></p>
       <div class="btn-col">
         <button id="btn-play" class="btn btn-primary" type="button">Play</button>
         <button id="btn-howto" class="btn" type="button">How to Play</button>
@@ -101,6 +101,13 @@
       <h2 id="settings-heading">Settings</h2>
       <div class="settings-list">
         <div class="setting-row">
+          <span class="setting-label">Theme</span>
+          <div class="seg" data-setting="theme">
+            <button class="seg-btn" data-value="classic" type="button">Classic</button>
+            <button class="seg-btn" data-value="driftrock" type="button">Driftrock</button>
+          </div>
+        </div>
+        <div class="setting-row">
           <span class="setting-label">Sound</span>
           <div class="seg" data-setting="sound">
             <button class="seg-btn" data-value="true" type="button">On</button>
@@ -154,10 +161,10 @@
   <section id="overlay-gameover" class="overlay" role="dialog" aria-modal="true" aria-labelledby="gameover-heading" hidden>
     <div class="overlay-panel">
       <h2 id="gameover-heading">Game Over</h2>
-      <p id="gameover-newbest" class="new-best" hidden>NEW BEST</p>
-      <p class="go-line">SCORE <span id="gameover-score">0</span></p>
-      <p class="go-line">BEST <span id="gameover-best">0</span></p>
-      <p class="go-line">WAVE <span id="gameover-wave">1</span></p>
+      <p id="gameover-newbest" class="new-best" hidden>New best</p>
+      <p class="go-line">Score <span id="gameover-score">0</span></p>
+      <p class="go-line">Best <span id="gameover-best">0</span></p>
+      <p class="go-line">Wave <span id="gameover-wave">1</span></p>
       <div class="btn-col">
         <button id="btn-play-again" class="btn btn-primary" type="button">Play Again</button>
         <button id="btn-gameover-title" class="btn" type="button">Title</button>

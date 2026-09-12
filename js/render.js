@@ -9,7 +9,8 @@
   var canvas = null, ctx = null;
   var cssW = 0, cssH = 0, dpr = 1;
 
-  var settings = { quality: 'high', glow: 'auto', shake: true };
+  var settings = { quality: 'high', glow: 'auto', shake: true, theme: 'classic' };
+  var palette = CFG.THEMES.classic;
   var resolvedGlow = false;
   var reducedMotion = false;
 
@@ -20,7 +21,7 @@
   var debugEl = null;
   var debugEnabled = false;
 
-  var fpsAccum = 0, fpsFrames = 0, fpsLast = 0, fpsValue = 0, lastRafTime = 0;
+  var fpsAccum = 0, fpsFrames = 0, fpsValue = 0, lastRafTime = 0;
 
   function init(canvasEl, debugFlag) {
     canvas = canvasEl;
@@ -46,6 +47,7 @@
 
   function applySettings(s) {
     settings = s;
+    palette = CFG.THEMES[s.theme] || CFG.THEMES.classic;
     resolveGlow();
     resize(cssW, cssH); // dpr may change with quality
   }
@@ -90,6 +92,13 @@
     }
   }
 
+  // Sets the color for the next batch of strokes/fills; the glow takes the same color.
+  function ink(color) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    if (resolvedGlow) ctx.shadowColor = color;
+  }
+
   // Returns offsets [dx,dy] (including [0,0]) at which an entity of given radius
   // at (x,y) should also be drawn so it doesn't pop in/out at the wrap edges.
   // Allocation-free: reuses one array. Pass wrapX=false for saucers (vertical wrap only).
@@ -120,7 +129,7 @@
     var worldW = world.worldW, worldH = world.worldH;
 
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = CFG.COLORS.BG;
+    ctx.fillStyle = palette.BG;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.setTransform(dpr * ppu, 0, 0, dpr * ppu, shakeX * dpr, shakeY * dpr);
@@ -130,28 +139,24 @@
 
     drawStars(worldW, worldH, ppu);
 
-    if (resolvedGlow) {
-      ctx.shadowColor = CFG.COLORS.VECTOR;
-      // shadowBlur ignores the current transform, so it is specified in device pixels.
-      ctx.shadowBlur = CFG.RENDER.GLOW_BLUR_CSS * dpr;
-    } else {
-      ctx.shadowBlur = 0;
-    }
+    // shadowBlur ignores the current transform, so it is specified in device pixels.
+    ctx.shadowBlur = resolvedGlow ? CFG.RENDER.GLOW_BLUR_CSS * dpr : 0;
 
     drawAsteroids(world.asteroids, worldW, worldH);
     drawBullets(world.bullets, worldW, worldH, ppu);
     drawSaucer(world.saucer, worldW, worldH);
     drawShip(world.ship, worldW, worldH);
-    drawDebris(world.debris, worldW, worldH);
+    drawDebris(world.debris);
 
     ctx.shadowBlur = 0;
-    drawParticles(world.particles, worldW, worldH, ppu);
+    drawParticles(world.particles, ppu);
 
     if (debugEnabled) drawDebug(realDt, world);
   }
 
   function drawStars(worldW, worldH, ppu) {
-    ctx.fillStyle = 'rgba(232,241,255,0.5)';
+    ctx.fillStyle = palette.STAR;
+    ctx.globalAlpha = palette.STAR_ALPHA;
     var r = 1.2 / ppu; // ~1.2 CSS px regardless of world scale
     ctx.beginPath();
     for (var i = 0; i < stars.length; i++) {
@@ -160,11 +165,12 @@
       ctx.rect(x - r / 2, y - r / 2, r, r);
     }
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   function drawAsteroids(asteroids, worldW, worldH) {
     if (!asteroids.length) return;
-    ctx.strokeStyle = CFG.COLORS.VECTOR;
+    ink(palette.ROCK);
     ctx.beginPath();
     for (var i = 0; i < asteroids.length; i++) {
       var a = asteroids[i];
@@ -189,38 +195,46 @@
   function drawBullets(bullets, worldW, worldH, ppu) {
     if (!bullets.length) return;
     var half = (CFG.RENDER.BULLET_SIZE_CSS / ppu) / 2;
+    // Round bullets get a slightly larger radius so they read as heavy as the squares.
+    if (palette.ROUND_BULLETS) half *= 1.25;
 
-    ctx.fillStyle = CFG.COLORS.VECTOR;
+    ink(palette.PLAYER_BULLET);
     ctx.beginPath();
     var any = false;
     for (var i = 0; i < bullets.length; i++) {
       if (bullets[i].owner !== 'player') continue;
       any = true;
-      addBulletRects(bullets[i], half, worldW, worldH);
+      addBulletShapes(bullets[i], half, worldW, worldH);
     }
     if (any) ctx.fill();
 
-    ctx.fillStyle = CFG.COLORS.SAUCER_BULLET;
+    ink(palette.SAUCER_BULLET);
     ctx.beginPath();
     any = false;
     for (var j = 0; j < bullets.length; j++) {
       if (bullets[j].owner !== 'saucer') continue;
       any = true;
-      addBulletRects(bullets[j], half, worldW, worldH);
+      addBulletShapes(bullets[j], half, worldW, worldH);
     }
     if (any) ctx.fill();
   }
 
-  function addBulletRects(b, half, worldW, worldH) {
+  function addBulletShapes(b, half, worldW, worldH) {
     var ghosts = computeGhosts(b.x, b.y, half, worldW, worldH);
     for (var g = 0; g < ghosts.length; g += 2) {
-      ctx.rect(b.x + ghosts[g] - half, b.y + ghosts[g + 1] - half, half * 2, half * 2);
+      var x = b.x + ghosts[g], y = b.y + ghosts[g + 1];
+      if (palette.ROUND_BULLETS) {
+        ctx.moveTo(x + half, y);
+        ctx.arc(x, y, half, 0, Math.PI * 2);
+      } else {
+        ctx.rect(x - half, y - half, half * 2, half * 2);
+      }
     }
   }
 
   function drawSaucer(s, worldW, worldH) {
     if (!s) return;
-    ctx.strokeStyle = CFG.COLORS.VECTOR;
+    ink(palette.SAUCER);
     ctx.beginPath();
     var r = s.hitRadius;
     var ghosts = computeGhosts(s.x, s.y, r * 1.4, worldW, worldH, false);
@@ -246,9 +260,9 @@
     var shape = ent.SHIP_SHAPE;
     var cosA = Math.cos(ship.angle), sinA = Math.sin(ship.angle);
     // Invulnerable: blink between full and dim (§8) so the ship never fully disappears.
-    var dim = ship.invulnTimer > 0 && !ship.blinkOn;
+    if (ship.invulnTimer > 0 && !ship.blinkOn) ctx.globalAlpha = 0.35;
 
-    ctx.strokeStyle = dim ? 'rgba(232,241,255,0.35)' : CFG.COLORS.VECTOR;
+    ink(palette.SHIP);
     ctx.beginPath();
     var ghosts = computeGhosts(ship.x, ship.y, CFG.SHIP.LENGTH, worldW, worldH);
     for (var g = 0; g < ghosts.length; g += 2) {
@@ -263,7 +277,7 @@
     ctx.stroke();
 
     if (ship.thrusting) {
-      ctx.strokeStyle = CFG.COLORS.THRUST;
+      ink(palette.THRUST);
       ctx.beginPath();
       var flick = 0.5 + util.rand() * 0.5;
       var backX = -6, backY1 = 3, backY2 = -3;
@@ -278,14 +292,15 @@
       }
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
   }
 
-  function drawDebris(list, worldW, worldH) {
+  function drawDebris(list) {
     if (!list.length) return;
+    ink(palette.SHIP);
     for (var i = 0; i < list.length; i++) {
       var d = list[i];
-      var alpha = Math.max(0, d.life / d.maxLife);
-      ctx.strokeStyle = 'rgba(232,241,255,' + alpha + ')';
+      ctx.globalAlpha = Math.max(0, d.life / d.maxLife);
       var cosA = Math.cos(d.angle), sinA = Math.sin(d.angle);
       var x1 = d.x1 * cosA - d.y1 * sinA + d.x;
       var y1 = d.x1 * sinA + d.y1 * cosA + d.y;
@@ -296,28 +311,37 @@
       ctx.lineTo(x2, y2);
       ctx.stroke();
     }
+    ctx.globalAlpha = 1;
   }
 
+  // Particles are batched by theme color, then by fade bucket, to keep fills few.
   var ALPHA_BUCKETS = [0.15, 0.35, 0.55, 0.75, 0.95];
-  function drawParticles(list, worldW, worldH, ppu) {
+  var PARTICLE_COLORS = ['ROCK', 'SAUCER', 'SHIP'];
+  function drawParticles(list, ppu) {
     if (!list.length) return;
     var half = (CFG.RENDER.PARTICLE_SIZE_CSS / ppu) / 2;
-    for (var k = 0; k < ALPHA_BUCKETS.length; k++) {
-      ctx.beginPath();
-      var any = false;
-      for (var p = 0; p < list.length; p++) {
-        var particle = list[p];
-        var t = Math.max(0, Math.min(1, particle.life / particle.maxLife));
-        var bucket = Math.min(ALPHA_BUCKETS.length - 1, Math.floor(t * ALPHA_BUCKETS.length));
-        if (bucket !== k) continue;
-        any = true;
-        ctx.rect(particle.x - half, particle.y - half, half * 2, half * 2);
-      }
-      if (any) {
-        ctx.fillStyle = 'rgba(232,241,255,' + ALPHA_BUCKETS[k] + ')';
-        ctx.fill();
+    for (var c = 0; c < PARTICLE_COLORS.length; c++) {
+      var key = PARTICLE_COLORS[c];
+      ctx.fillStyle = palette[key];
+      for (var k = 0; k < ALPHA_BUCKETS.length; k++) {
+        ctx.beginPath();
+        var any = false;
+        for (var p = 0; p < list.length; p++) {
+          var particle = list[p];
+          if (particle.color !== key) continue;
+          var t = Math.max(0, Math.min(1, particle.life / particle.maxLife));
+          var bucket = Math.min(ALPHA_BUCKETS.length - 1, Math.floor(t * ALPHA_BUCKETS.length));
+          if (bucket !== k) continue;
+          any = true;
+          ctx.rect(particle.x - half, particle.y - half, half * 2, half * 2);
+        }
+        if (any) {
+          ctx.globalAlpha = ALPHA_BUCKETS[k];
+          ctx.fill();
+        }
       }
     }
+    ctx.globalAlpha = 1;
   }
 
   function drawDebug(frameDt, world) {

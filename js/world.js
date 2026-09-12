@@ -43,7 +43,10 @@
     saucerSpawnTimer: 8,
     heartbeatTimer: 1,
     respawnElapsed: 0,
-    waveBanner: 0, // seconds remaining to show "WAVE N"
+    // on-screen banner ("Wave 3", "Extra ship"), shown while messageTimer > 0
+    message: '',
+    messageTimer: 0,
+    messageBonus: false,
     // callbacks (assigned by main.js)
     callbacks: {}
   };
@@ -130,7 +133,7 @@
   function startWave() {
     world.phase = 'WAVE_INTRO';
     world.phaseTimer = CFG.WAVE.INTRO_DURATION;
-    world.waveBanner = CFG.WAVE.INTRO_DURATION;
+    showMessage('Wave ' + world.wave, CFG.WAVE.INTRO_DURATION, false);
     world.waveSpeedMul = Math.min(CFG.ASTEROID.SPEED_MUL_BASE + CFG.ASTEROID.SPEED_MUL_PER_WAVE * (world.wave - 1), CFG.ASTEROID.SPEED_MUL_CAP);
     spawnWaveAsteroids();
     world.saucerSpawnTimer = util.randRange(
@@ -171,6 +174,8 @@
   // fire/thrust) is fully resolved upstream in input.js — VB.input.fire/.thrust/
   // .hyperspacePressed are already filtered by the time step() reads them here.
   function step(dt, input) {
+    if (world.messageTimer > 0) world.messageTimer -= dt;
+
     if (world.gameOver) {
       // Ship is gone; keep the rest of the world animating during the game-over delay.
       stepShipAndWorld(dt, input);
@@ -183,7 +188,6 @@
     switch (world.phase) {
       case 'WAVE_INTRO':
         world.phaseTimer -= dt;
-        world.waveBanner = Math.max(0, world.phaseTimer);
         stepShipAndWorld(dt, input);
         if (world.phase === 'WAVE_INTRO' && world.phaseTimer <= 0) world.phase = 'ACTIVE';
         break;
@@ -409,7 +413,7 @@
         if (wrappedDist(world.saucer.x, world.saucer.y, b.x, b.y, world.worldW, world.worldH) <= world.saucer.hitRadius) {
           b.alive = false;
           addScore(world.saucer.type === 'S' ? CFG.SAUCER.SMALL.score : CFG.SAUCER.LARGE.score);
-          spawnExplosion(world.saucer.x, world.saucer.y, 'M');
+          spawnExplosion(world.saucer.x, world.saucer.y, 'M', 'SAUCER');
           VB.audio.explode('M');
           VB.audio.setSaucer(false, false);
           world.saucer = null;
@@ -464,7 +468,7 @@
     if (ship.alive && ship.invulnTimer <= 0 && !ship.hyperActive && world.saucer) {
       if (wrappedDist(ship.x, ship.y, world.saucer.x, world.saucer.y, world.worldW, world.worldH) <= ship.radius + world.saucer.hitRadius) {
         addScore(world.saucer.type === 'S' ? CFG.SAUCER.SMALL.score : CFG.SAUCER.LARGE.score);
-        spawnExplosion(world.saucer.x, world.saucer.y, 'M');
+        spawnExplosion(world.saucer.x, world.saucer.y, 'M', 'SAUCER');
         VB.audio.explode('M');
         VB.audio.setSaucer(false, false);
         world.saucer = null;
@@ -479,7 +483,7 @@
         if (!a.alive) continue;
         if (wrappedDist(world.saucer.x, world.saucer.y, a.x, a.y, world.worldW, world.worldH) <= world.saucer.hitRadius + a.hitRadius) {
           destroyAsteroid(a, false);
-          spawnExplosion(world.saucer.x, world.saucer.y, 'M');
+          spawnExplosion(world.saucer.x, world.saucer.y, 'M', 'SAUCER');
           VB.audio.explode('M');
           VB.audio.setSaucer(false, false);
           world.saucer = null;
@@ -494,7 +498,7 @@
     if (!ship.alive) return;
     ship.alive = false;
     ship.visible = false;
-    spawnExplosion(ship.x, ship.y, 'L');
+    spawnExplosion(ship.x, ship.y, 'L', 'SHIP');
     ent.spawnDebrisFromShip(world.debrisPool, world.debris, ship);
     VB.audio.shipDeath();
     VB.audio.setThrust(false);
@@ -521,7 +525,7 @@
     if (awardScore) addScore(ent.sizeSpec(a.size).score);
 
     var sizeChar = a.size === 'L' ? 'L' : (a.size === 'M' ? 'M' : 'S');
-    spawnExplosion(a.x, a.y, sizeChar);
+    spawnExplosion(a.x, a.y, sizeChar, 'ROCK');
     VB.audio.explode(sizeChar);
     if (a.size === 'L') haptic(CFG.HAPTICS.LARGE_ASTEROID_MS);
     if (VB.render && VB.render.shake && a.size === 'L') VB.render.shake(CFG.RENDER.SHAKE_LARGE_ASTEROID);
@@ -556,6 +560,13 @@
     return 2;
   }
 
+  // bonus=true styles the banner in the theme's accent color.
+  function showMessage(text, seconds, bonus) {
+    world.message = text;
+    world.messageTimer = seconds;
+    world.messageBonus = !!bonus;
+  }
+
   function addScore(pts) {
     world.score += pts;
     var awarded = Math.floor(world.score / CFG.SHIP.EXTRA_LIFE_SCORE);
@@ -567,11 +578,20 @@
       }
       VB.audio.extraLife();
       haptic(CFG.HAPTICS.EXTRA_LIFE_MS);
+      showMessage('Extra ship', CFG.UI.EXTRA_SHIP_BANNER_S, true);
+      if (world.gameOver) {
+        // Bullets still in flight after the last ship was lost earned a new one: play on.
+        world.gameOver = false;
+        world.phase = 'RESPAWN_WAIT';
+        world.respawnElapsed = 0;
+        if (world.saucer) VB.audio.setSaucer(true, world.saucer.type === 'S');
+      }
       if (world.callbacks.onExtraLife) world.callbacks.onExtraLife();
     }
   }
 
-  function spawnExplosion(x, y, size) {
+  // colorKey is the theme palette key the sparks take: 'ROCK', 'SAUCER' or 'SHIP'.
+  function spawnExplosion(x, y, size, colorKey) {
     var count = size === 'L' ? 22 : (size === 'M' ? 14 : (size === 'S' ? 8 : 18));
     var speedMax = size === 'L' ? 140 : (size === 'M' ? 110 : 90);
     for (var i = 0; i < count; i++) {
@@ -579,7 +599,7 @@
       var p = world.particlePool.acquire();
       var dir = util.randRange(0, Math.PI * 2);
       var speed = util.randRange(speedMax * 0.2, speedMax);
-      ent.spawnParticle(p, x, y, Math.cos(dir) * speed, Math.sin(dir) * speed, util.randRange(0.3, 0.7));
+      ent.spawnParticle(p, x, y, Math.cos(dir) * speed, Math.sin(dir) * speed, util.randRange(0.3, 0.7), colorKey);
       world.particles.push(p);
     }
   }

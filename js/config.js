@@ -28,11 +28,33 @@
       GHOST_MARGIN_MULT: 1 // ghost drawn when within radius of edge
     },
 
-    COLORS: {
-      VECTOR: '#e8f1ff',
-      THRUST: '#ffb347',
-      SAUCER_BULLET: '#ff6b5b',
-      BG: '#000000'
+    // Canvas palettes per visual theme (Settings → Theme). The matching menu/HUD
+    // colors are CSS tokens in style.css, keyed by data-game-theme on <html>.
+    THEMES: {
+      classic: {
+        BG: '#000000',
+        STAR: '#e8f1ff',
+        STAR_ALPHA: 0.5,
+        SHIP: '#e8f1ff',
+        ROCK: '#e8f1ff',
+        SAUCER: '#e8f1ff',
+        PLAYER_BULLET: '#e8f1ff',
+        SAUCER_BULLET: '#ff6b5b',
+        THRUST: '#ffb347',
+        ROUND_BULLETS: false
+      },
+      driftrock: {
+        BG: '#101735',
+        STAR: '#b9bedd',
+        STAR_ALPHA: 0.45,
+        SHIP: '#f3eee3',
+        ROCK: '#f2b84b',
+        SAUCER: '#ff6fa5',
+        PLAYER_BULLET: '#7fe3f0',
+        SAUCER_BULLET: '#ff6fa5',
+        THRUST: '#f2b84b',
+        ROUND_BULLETS: true
+      }
     },
 
     LOOP: {
@@ -155,8 +177,10 @@
       HYPERSPACE_FREQ_START: 200,
       HYPERSPACE_FREQ_END: 1200,
       HYPERSPACE_DUR: 0.25,
-      EXTRA_LIFE_FREQS: [880, 1175, 1568],
-      EXTRA_LIFE_DUR: 0.07,
+      EXTRA_LIFE_FREQS: [660, 880, 1320],
+      EXTRA_LIFE_DUR: 0.12,
+      EXTRA_LIFE_SPACING: 0.09, // notes overlap slightly so the arpeggio rings
+      EXTRA_LIFE_GAIN: 0.2,
       SHIP_DEATH_FREQ_START: 1200,
       SHIP_DEATH_FREQ_END: 100,
       SHIP_DEATH_DUR: 1.1
@@ -170,7 +194,8 @@
 
     UI: {
       PLAY_AGAIN_GUARD_S: 1.0,
-      GAME_OVER_DELAY_S: 1.5
+      GAME_OVER_DELAY_S: 1.5,
+      EXTRA_SHIP_BANNER_S: 2.0
     }
   };
 

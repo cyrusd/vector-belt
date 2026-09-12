@@ -150,10 +150,15 @@
       handlePauseToggle();
     }
 
-    // Let the final explosion play out before showing the Game Over screen.
-    if (state === STATE.PLAYING && VB.world.gameOver) {
-      gameOverDelay -= frameDt;
-      if (gameOverDelay <= 0) enterGameOver();
+    // Let the final explosion play out before showing the Game Over screen. An extra
+    // ship earned by bullets still in flight clears gameOver, which resets the delay.
+    if (state === STATE.PLAYING) {
+      if (!VB.world.gameOver) {
+        gameOverDelay = CFG.UI.GAME_OVER_DELAY_S;
+      } else {
+        gameOverDelay -= frameDt;
+        if (gameOverDelay <= 0) enterGameOver();
+      }
     }
 
     VB.render.frame(now, VB.world);
@@ -161,8 +166,8 @@
     if (state === STATE.PLAYING || state === STATE.PAUSED) {
       VB.ui.updateHUD(VB.world.score, Math.max(VB.world.best, VB.world.score), VB.world.lives);
     }
-    var showBanner = state === STATE.PLAYING && VB.world.phase === 'WAVE_INTRO' && VB.world.waveBanner > 0;
-    VB.ui.updateWaveBanner(VB.world.wave, showBanner);
+    var showBanner = state === STATE.PLAYING && VB.world.messageTimer > 0;
+    VB.ui.updateBanner(VB.world.message, VB.world.messageBonus, showBanner);
 
     if (state === STATE.PLAYING) {
       var settings = VB.storage.getSettings();

@@ -7,5 +7,5 @@ desktop.ini
 .vscode/
 .idea/
 
-# Local Claude Code settings
-.claude/settings.local.json
+# Local Claude Code config (dev server launch settings, etc.)
+.claude/

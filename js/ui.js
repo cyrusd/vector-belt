@@ -10,7 +10,7 @@
   var settingsReturnTo = 'title';
 
   var hudCache = { score: null, best: null, lives: null };
-  var waveBannerCache = { wave: null, showing: null };
+  var bannerCache = { text: null, bonus: null, showing: null };
 
   var portraitHintDismissed = false;
   var fullscreenSupported = false;
@@ -25,7 +25,7 @@
     el.hudBest = $('hud-best').querySelector('span');
     el.hudLives = $('hud-lives');
     el.pauseBtn = $('pause-btn');
-    el.waveBanner = $('wave-banner');
+    el.banner = $('banner');
 
     el.touchLayer = $('touch-layer');
     el.joystick = $('joystick');
@@ -129,7 +129,7 @@
       var html = '';
       for (var i = 0; i < shown; i++) {
         html += '<svg viewBox="-12 -10 24 20" xmlns="http://www.w3.org/2000/svg">' +
-          '<polygon points="10,0 -8,7 -4,0 -8,-7" fill="none" stroke="#e8f1ff" stroke-width="1.5"/></svg>';
+          '<polygon points="10,0 -8,7 -4,0 -8,-7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
       }
       el.hudLives.innerHTML = html;
     }
@@ -139,14 +139,19 @@
     el.hud.style.visibility = visible ? 'visible' : 'hidden';
   }
 
-  function updateWaveBanner(wave, showing) {
-    if (waveBannerCache.wave !== wave) {
-      waveBannerCache.wave = wave;
-      el.waveBanner.textContent = 'WAVE ' + wave;
+  // Fades via the .is-visible class; touches the DOM only when something changes.
+  function updateBanner(text, bonus, showing) {
+    if (bannerCache.text !== text) {
+      bannerCache.text = text;
+      el.banner.textContent = text;
     }
-    if (waveBannerCache.showing !== showing) {
-      waveBannerCache.showing = showing;
-      el.waveBanner.hidden = !showing;
+    if (bannerCache.bonus !== bonus) {
+      bannerCache.bonus = bonus;
+      el.banner.classList.toggle('is-bonus', bonus);
+    }
+    if (bannerCache.showing !== showing) {
+      bannerCache.showing = showing;
+      el.banner.classList.toggle('is-visible', showing);
     }
   }
 
@@ -187,8 +192,17 @@
     var row = $('row-haptics');
     if (row) row.hidden = !haptics;
 
+    applyTheme(settings.theme);
     VB.audio.setMuted(!settings.sound);
-    VB.render.applySettings({ quality: settings.quality, glow: settings.glow, shake: settings.shake });
+    VB.render.applySettings({ quality: settings.quality, glow: settings.glow, shake: settings.shake, theme: settings.theme });
+  }
+
+  function applyTheme(theme) {
+    var name = CFG.THEMES[theme] ? theme : 'classic';
+    document.documentElement.setAttribute('data-game-theme', name);
+    // Tint the mobile browser's toolbar to match the playfield.
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', CFG.THEMES[name].BG);
   }
 
   function onSettingClick(e) {
@@ -303,7 +317,7 @@
     getCurrentOverlay: getCurrentOverlay,
     updateHUD: updateHUD,
     setHudVisible: setHudVisible,
-    updateWaveBanner: updateWaveBanner,
+    updateBanner: updateBanner,
     updateTouchVisuals: updateTouchVisuals,
     setTouchLayerActive: setTouchLayerActive,
     populateSettingsUI: populateSettingsUI,
